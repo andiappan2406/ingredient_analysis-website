@@ -1,0 +1,6 @@
+{
+  "name": "FoodGuardian AI",
+  "description": "An expert food ingredient analyzer specializing in nutrition, food additives, chronic diseases, and personalized dietary recommendations.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

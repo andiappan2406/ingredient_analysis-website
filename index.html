@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodGuardian AI - Personalized Food Analyzer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Libraries (CDNs) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <!-- Background Blobs -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-container">
+      <div class="logo-section">
+        <div class="logo-icon-wrapper">
+          <i data-lucide="shield-check" class="logo-icon"></i>
+        </div>
+        <div class="logo-text">
+          <h1>FoodGuardian AI</h1>
+          <p>Instant Health & Ingredient Analyzer</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- Theme Toggle -->
+        <button id="theme-toggle-btn" class="theme-toggle" title="Toggle Dark/Light Mode">
+          <i data-lucide="sun" class="sun-icon"></i>
+          <i data-lucide="moon" class="moon-icon"></i>
+        </button>
+        <!-- History Toggle -->
+        <button id="history-toggle-btn" class="btn btn-secondary">
+          <i data-lucide="history"></i>
+          <span>History Log</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar Drawer for History -->
+  <div id="history-drawer" class="drawer-backdrop hidden">
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <h2>Scan History</h2>
+        <button id="history-close" class="drawer-close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <div id="history-list" class="history-list-container">
+          <!-- Dynamic Items -->
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <button id="clear-history-btn" class="btn btn-danger w-full">Clear History</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Dashboard -->
+  <!-- Main Content Dashboard -->
+  <main class="main-content">
+    <div class="content-container dashboard-grid">
+      <!-- Left Panel: Input & Customization -->
+      <div class="panel-left">
+        <!-- STEP 1: Ingredient Input View -->
+        <section id="step-input-view" class="card fade-in">
+          <div class="hero-intro text-center">
+            <h2 class="hero-title">Analyze Your Food in Seconds</h2>
+            <p class="hero-subtitle">Scan a nutrition label or upload an image to receive a personalized safety rating and score.</p>
+          </div>
+
+          <!-- Health Profile Status Bar -->
+          <div class="profile-summary-card">
+            <div class="profile-card-left">
+              <div class="profile-icon-pill">
+                <i data-lucide="user"></i>
+              </div>
+              <div class="profile-text-group">
+                <span class="profile-heading">Analyzing for Profile</span>
+                <span id="profile-summary-tags" class="profile-tags-list">General Health (Default)</span>
+              </div>
+            </div>
+            <button id="profile-btn" class="btn btn-secondary" aria-haspopup="dialog" aria-controls="profile-modal">
+              <i data-lucide="sliders"></i>
+              Customize Profile
+            </button>
+          </div>
+
+          <!-- Product Name Input -->
+          <div class="form-group input-group-name">
+            <label for="product-name" class="form-label">Product Name <span class="optional">(Optional)</span></label>
+            <input type="text" id="product-name" class="form-input" placeholder="e.g. Organic Fruit Juice, Protein Bar">
+          </div>
+
+          <!-- Media Scanner Interface -->
+          <div class="scanner-media-hub">
+            <input type="file" id="file-input" accept="image/*" class="hidden-input" aria-label="Upload label image file">
+            
+            <button id="camera-btn" class="scan-hub-card card-violet" aria-haspopup="dialog" aria-controls="camera-modal">
+              <div class="hub-icon"><i data-lucide="camera"></i></div>
+              <h3>Scan Label with Camera</h3>
+              <p>Take a photo of the ingredients list</p>
+            </button>
+
+            <button id="upload-btn" class="scan-hub-card card-fuchsia">
+              <div class="hub-icon"><i data-lucide="image"></i></div>
+              <h3>Upload Label Image</h3>
+              <p>Select a screenshot or photo from files</p>
+            </button>
+          </div>
+
+          <!-- Manual Paste Option Toggle -->
+          <div class="paste-option-container">
+            <button id="toggle-paste-btn" class="link-btn-toggle" aria-expanded="false" aria-controls="manual-paste-box">
+              <i data-lucide="chevron-right" id="paste-chevron"></i>
+              <span>Or paste ingredients text manually</span>
+            </button>
+            
+            <div id="manual-paste-box" class="manual-paste-area hidden fade-in">
+              <textarea id="ocr-textarea" class="form-textarea" placeholder="Paste ingredients list here..." aria-label="Ingredients text list"></textarea>
+              <div id="ocr-status-message" class="ocr-toast hidden" role="status">
+                <i data-lucide="check-circle-2"></i>
+                <span>Text extracted successfully! Feel free to review or edit.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="submit-action-bar">
+            <button id="analyze-btn" class="btn btn-primary w-full" disabled>
+              <i data-lucide="sparkles"></i>
+              Analyze Now
+            </button>
+            <button id="tab-dictionary" class="btn btn-secondary w-full" aria-haspopup="dialog" aria-controls="dictionary-modal">
+              <i data-lucide="book-open"></i>
+              Additive Dictionary
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Panel: Results & Onboarding / Loading / Error states -->
+      <div class="panel-right">
+        <!-- ONBOARDING PLACEHOLDER -->
+        <section id="step-onboarding-view" class="card text-center fade-in hidden">
+          <div class="onboarding-graphics">
+            <div class="glow-orb"></div>
+            <i data-lucide="shield-alert" class="onboarding-main-icon text-violet"></i>
+          </div>
+          <h2 class="onboarding-title">Awaiting Analysis</h2>
+          <p class="onboarding-subtitle">Please input or scan the ingredients list on the left to start the analysis.</p>
+        </section>
+
+        <!-- LOADING STATE VIEW -->
+        <section id="step-loading-view" class="card text-center hidden fade-in">
+          <div class="loader-wrapper">
+            <div class="spinner-container">
+              <div class="spinner-outer"></div>
+              <div class="spinner-inner"></div>
+            </div>
+          </div>
+          <h3 class="loading-title">Analyzing Ingredients...</h3>
+          <p class="loading-subtitle">Scanning labels and cross-referencing with health parameters.</p>
+          
+          <!-- Processing State (For OCR) -->
+          <div id="processing-state" class="ocr-progress-box hidden" role="status">
+            <div class="spinner-small"></div>
+            <p>Extracting text from image label...</p>
+          </div>
+        </section>
+
+        <!-- ERROR STATE VIEW -->
+        <section id="step-error-view" class="card text-center error-card hidden fade-in">
+          <div class="error-icon-wrapper">
+            <i data-lucide="alert-triangle"></i>
+          </div>
+          <h3 class="error-title">Analysis Failed</h3>
+          <p id="error-message" class="error-subtitle">An unexpected error occurred. Please try again.</p>
+          <button id="error-retry-btn" class="btn btn-danger">Go Back & Try Again</button>
+        </section>
+
+        <!-- STEP 2: Results Display View -->
+        <section id="step-result-view" class="hidden fade-in">
+          <div class="result-navigation">
+            <button id="back-to-scan-btn" class="btn btn-secondary">
+              <i data-lucide="arrow-left"></i>
+              <span>Scan Another Product</span>
+            </button>
+            <button id="print-btn" class="print-btn">
+              <i data-lucide="printer"></i>
+              <span>Print Report</span>
+            </button>
+          </div>
+
+          <!-- Easy & Simple Summary Card -->
+          <div class="card result-card-main">
+            <div class="simple-verdict-banner">
+              <!-- Health Score Gauge -->
+              <div id="score-gauge-container" class="score-gauge-box">
+                <svg class="gauge-svg" viewBox="0 0 100 100" aria-label="Overall Health Score Gauge">
+                  <circle class="gauge-bg" cx="50" cy="50" r="40" />
+                  <circle id="gauge-progress" class="gauge-fg" cx="50" cy="50" r="40" />
+                </svg>
+                <div class="gauge-center">
+                  <span id="gauge-score-value">--</span>
+                  <span class="gauge-max">/10</span>
+                </div>
+              </div>
+
+              <div class="verdict-summary-details">
+                <div class="verdict-badge-pill" id="verdict-badge">Yellow Choice</div>
+                <h2 id="simple-verdict-title">Analysis Verdict</h2>
+                <p id="simple-verdict-text">Loading simple verdict details...</p>
+              </div>
+            </div>
+
+            <!-- Highlight list: Good vs Bad -->
+            <div class="highlights-grid">
+              <div class="highlight-card card-good">
+                <div class="highlight-header">
+                  <i data-lucide="check-circle" class="text-emerald"></i>
+                  <h4>The Good Parameters</h4>
+                </div>
+                <ul id="good-highlights-list" class="highlights-list">
+                  <!-- Dynamic Good bullet points -->
+                </ul>
+              </div>
+              
+              <div class="highlight-card card-bad">
+                <div class="highlight-header">
+                  <i data-lucide="alert-circle" class="text-rose"></i>
+                  <h4>Watch Out Parameters</h4>
+                </div>
+                <ul id="bad-highlights-list" class="highlights-list">
+                  <!-- Dynamic Bad bullet points -->
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Result Reasoning Accordion Card -->
+          <div class="card reasoning-accordion-card mt-4">
+            <details class="reasoning-details" open>
+              <summary class="reasoning-summary">
+                <span class="summary-heading-text">
+                  <i data-lucide="file-text" class="summary-icon"></i>
+                  🔍 Detailed Analysis & Scientific Reasoning
+                </span>
+                <span class="summary-arrow"><i data-lucide="chevron-down"></i></span>
+              </summary>
+              <div class="reasoning-content-body">
+                <div id="result-html" class="prose"></div>
+              </div>
+            </details>
+          </div>
+
+          <!-- Wellness and Health Routine Feed -->
+          <div class="wellness-feed-section mt-6">
+            <h3 class="feed-section-heading">🌟 Daily Health & Wellness Routine Feed</h3>
+            <p class="feed-section-sub">Simple habits to support healthy digestion, label awareness, and metabolic wellness.</p>
+            
+            <div class="wellness-feed-grid">
+              <div class="feed-card">
+                <div class="feed-badge">DIGESTION</div>
+                <div class="feed-icon"><i data-lucide="droplet" class="text-violet"></i></div>
+                <h4>Hydration First</h4>
+                <p>Drink a glass of water before meals. Proper hydration aids enzyme production and speeds up food breakdown.</p>
+              </div>
+
+              <div class="feed-card">
+                <div class="feed-badge">LABEL AWARENESS</div>
+                <div class="feed-icon"><i data-lucide="search" class="text-fuchsia"></i></div>
+                <h4>The 3-Ingredient Rule</h4>
+                <p>If a product's first three ingredients include syrup, sugar, or hydrogenated oils, consider healthier alternatives.</p>
+              </div>
+
+              <div class="feed-card">
+                <div class="feed-badge">METABOLISM</div>
+                <div class="feed-icon"><i data-lucide="leaf" class="text-emerald"></i></div>
+                <h4>Minimize Process Score 4</h4>
+                <p>Highly processed foods alter gut microbiota. Focus on whole grains and single-ingredient foods when shopping.</p>
+              </div>
+              
+              <div class="feed-card">
+                <div class="feed-badge">NUTRITION</div>
+                <div class="feed-icon"><i data-lucide="activity" class="text-orange"></i></div>
+                <h4>Fiber-to-Sugar Ratio</h4>
+                <p>Aim for foods where the fiber-to-sugar ratio is at least 1:2. This slows down sugar absorption and avoids glucose spikes.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Additive Lookup Dictionary Modal -->
+  <div id="dictionary-modal" class="modal-backdrop hidden">
+    <div class="modal-card scale-in">
+      <div class="modal-header">
+        <h2 class="flex items-center gap-2">
+          <i data-lucide="book-open" class="text-violet"></i>
+          Food Additive Lookup
+        </h2>
+        <button id="dictionary-close" class="modal-close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Search common food additives, preservatives, and coloring agents to check safety ratings.</p>
+        
+        <div class="search-box-wrapper">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="dictionary-search" class="form-input search-input" placeholder="Type ingredient name (e.g. Aspartame, Yellow 5, MSG...)">
+        </div>
+
+        <div id="dictionary-list" class="dictionary-grid">
+          <!-- Dynamically populated cards -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Health Profile Modal -->
+  <div id="profile-modal" class="modal-backdrop hidden">
+    <div class="modal-card scale-in">
+      <div class="modal-header">
+        <h2>Health Profile Settings</h2>
+        <button id="modal-close" class="modal-close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          These settings are optional. If provided, they will be used to personalize your food ingredient analysis.
+        </p>
+
+        <!-- Demographics Row -->
+        <div class="form-row">
+          <div class="form-group col-3">
+            <label for="profile-age" class="form-label">Age</label>
+            <input type="number" id="profile-age" class="form-input" min="0" max="120">
+          </div>
+          <div class="form-group col-3">
+            <label for="profile-gender" class="form-label">Gender</label>
+            <select id="profile-gender" class="form-input">
+              <option value="">Select...</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group col-3 checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="profile-pregnant">
+              <span class="custom-checkbox"></span>
+              <span class="label-text">Pregnant / Nursing</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tag Selection Group: Medical Conditions -->
+        <div class="tag-section">
+          <label class="form-label">Medical Conditions</label>
+          <div id="medical-conditions-tags" class="tag-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Tag Selection Group: Food Allergies -->
+        <div class="tag-section">
+          <label class="form-label">Food Allergies</label>
+          <div id="food-allergies-tags" class="tag-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Tag Selection Group: Dietary Preferences -->
+        <div class="tag-section">
+          <label class="form-label">Dietary Preferences</label>
+          <div id="diet-types-tags" class="tag-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Custom inputs -->
+        <div class="form-row text-inputs">
+          <div class="form-group col-2">
+            <label for="profile-avoid" class="form-label">Ingredients to Avoid <span class="optional">(Optional)</span></label>
+            <input type="text" id="profile-avoid" class="form-input" placeholder="e.g. Artificial colors, MSG">
+          </div>
+          <div class="form-group col-2">
+            <label for="profile-preferred" class="form-label">Preferred Ingredients <span class="optional">(Optional)</span></label>
+            <input type="text" id="profile-preferred" class="form-input" placeholder="e.g. Whole grains, natural flavors">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="profile-save-btn" class="btn btn-dark w-full">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera Scan Modal -->
+  <div id="camera-modal" class="modal-backdrop hidden">
+    <div class="modal-card camera-card scale-in">
+      <div class="modal-header">
+        <h2 class="flex items-center gap-2">
+          <i data-lucide="camera" class="text-violet"></i>
+          Scan Label
+        </h2>
+        <button id="camera-close" class="modal-close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="camera-stream-wrapper">
+        <video id="camera-stream" autoplay playsinline></video>
+        
+        <!-- Guide Overlay -->
+        <div class="camera-guide">
+          <div class="guide-corners">
+            <div class="corner top-left"></div>
+            <div class="corner top-right"></div>
+            <div class="corner bottom-left"></div>
+            <div class="corner bottom-right"></div>
+          </div>
+          <div class="guide-text">
+            <span>Position text clearly in frame</span>
+          </div>
+        </div>
+
+        <!-- Scanning progress overlay -->
+        <div id="camera-scanning-overlay" class="state-overlay scanner-loading hidden">
+          <div class="spinner-large text-violet"></div>
+          <h3>Analyzing Image...</h3>
+          <div class="progress-bar-container">
+            <div id="camera-progress-bar" class="progress-bar"></div>
+          </div>
+          <p id="camera-progress-percent" class="progress-percentage">0%</p>
+        </div>
+
+        <div id="camera-error-message" class="camera-error hidden">
+          <p>Unable to access camera. Please check permissions or try another device.</p>
+          <button id="camera-retry-btn" class="btn btn-secondary mt-2">
+            <i data-lucide="refresh-ccw"></i>
+            Try Again
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer flex-center">
+        <button id="capture-btn" class="capture-button" title="Capture Image">
+          <div class="capture-button-inner"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script src="app.js"></script>
+</body>
+</html>
