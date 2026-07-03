@@ -671,7 +671,9 @@ ${profileSection}
 `;
 
   try {
-    const aiResponse = await fetch("https://text.pollinations.ai/", {
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const endpoint = isLocalhost ? "/api/analyze" : "https://text.pollinations.ai/";
+    const aiResponse = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
